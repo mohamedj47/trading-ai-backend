@@ -1,34 +1,66 @@
 import os
 import pandas as pd
-from binance.client import Client
-from config import BINANCE_API_KEY, BINANCE_API_SECRET, DATA_DIR, START_DATE
+import yfinance as yf
+import ccxt
+from config import DATA_DIR, START_DATE
 
-# إنشاء مجلد البيانات إذا مش موجود
+# الأزواج الأساسية
+BASE_PAIRS = [
+    "BTC-USD",
+    "ETH-USD",
+    "EURUSD=X",
+    "GBPUSD=X",
+    "USDJPY=X",
+    "XAUUSD=X",
+    "AUDUSD=X",
+    "USDCAD=X",
+    "NZDUSD=X"
+]
+
+# إنشاء مجلد البيانات لو مش موجود
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# تهيئة عميل Binance
-client = Client(BINANCE_API_KEY, BINANCE_API_SECRET)
+def get_top_binance_pairs(limit=20):
+    """جلب أعلى الأزواج تداولاً من Binance"""
+    exchange = ccxt.binance()
+    markets = exchange.load_markets()
+    
+    # ترتيب حسب الحجم
+    pairs_sorted = sorted(
+        markets.values(),
+        key=lambda x: x['info'].get('quoteVolume', 0),
+        reverse=True
+    )
+    
+    top_pairs = []
+    for p in pairs_sorted[:limit]:
+        symbol = p['symbol'].replace("/", "-")
+        # نحافظ على نفس تنسيق Yahoo Finance (USDT → USD)
+        if symbol.endswith("-USDT"):
+            symbol = symbol.replace("-USDT", "-USD")
+        top_pairs.append(symbol)
+    
+    return top_pairs
 
-def fetch_historical_data(symbol="BTCUSDT", interval=Client.KLINE_INTERVAL_1DAY):
-    """تحميل البيانات التاريخية من Binance"""
-    print(f"جاري تحميل البيانات لـ {symbol}...")
-    klines = client.get_historical_klines(symbol, interval, START_DATE)
-
-    # تحويل البيانات إلى DataFrame
-    df = pd.DataFrame(klines, columns=[
-        "timestamp", "open", "high", "low", "close", "volume",
-        "close_time", "quote_asset_volume", "number_of_trades",
-        "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"
-    ])
-
-    # تحويل التواريخ
-    df["timestamp"] = pd.to_datetime(df["timestamp"], unit='ms')
-    df.set_index("timestamp", inplace=True)
-
-    # حفظ الملف
-    file_path = os.path.join(DATA_DIR, f"{symbol}.csv")
-    df.to_csv(file_path)
-    print(f"تم حفظ البيانات في {file_path}")
+def fetch_data():
+    # ضم الأزواج الأساسية + الأعلى تداولاً
+    top_pairs = get_top_binance_pairs()
+    all_pairs = list(set(BASE_PAIRS + top_pairs))
+    
+    print(f"[+] إجمالي الأزواج التي سيتم تحميلها: {len(all_pairs)}")
+    
+    for pair in all_pairs:
+        try:
+            print(f"[+] جاري تحميل البيانات: {pair}")
+            data = yf.download(pair, start=START_DATE)
+            if not data.empty:
+                file_path = os.path.join(DATA_DIR, f"{pair.replace('=', '').replace('-', '')}.csv")
+                data.to_csv(file_path)
+                print(f"    ✅ تم الحفظ: {file_path}")
+            else:
+                print(f"    ⚠ لا توجد بيانات لـ {pair}")
+        except Exception as e:
+            print(f"    ❌ خطأ في {pair}: {e}")
 
 if __name__ == "__main__":
-    fetch_historical_data()
+    fetch_data()
