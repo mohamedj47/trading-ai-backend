@@ -1,47 +1,67 @@
-import os
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
 import joblib
-from config import DATA_DIR, MODEL_PATH
+import glob
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from catboost import CatBoostClassifier
 
-def load_data(symbol="BTCUSDT"):
-    """تحميل البيانات التاريخية"""
-    file_path = os.path.join(DATA_DIR, f"{symbol}.csv")
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"ملف البيانات {file_path} غير موجود.")
+# مجلد تخزين البيانات اللي تم تحميلها
+DATA_DIR = "historical_data"
+MODELS_DIR = "models"
+os.makedirs(MODELS_DIR, exist_ok=True)
+
+# دالة تجهيز البيانات
+def prepare_data(df):
+    df['Return'] = df['Close'].pct_change()
+    df['Target'] = (df['Return'].shift(-1) > 0).astype(int)  # 1 صعود، 0 هبوط
+    df = df.dropna()
+    features = ['Open', 'High', 'Low', 'Close', 'Volume']
+    X = df[features]
+    y = df['Target']
+    return X, y
+
+# قائمة النماذج
+models = {
+    "RandomForest": RandomForestClassifier(n_estimators=200),
+    "GradientBoosting": GradientBoostingClassifier(),
+    "LogisticRegression": LogisticRegression(max_iter=1000),
+    "KNN": KNeighborsClassifier(),
+    "DecisionTree": DecisionTreeClassifier(),
+    "SVC": SVC(probability=True),
+    "XGBoost": XGBClassifier(eval_metric='logloss'),
+    "LightGBM": LGBMClassifier(),
+    "CatBoost": CatBoostClassifier(verbose=0)
+}
+
+# تدريب كل زوج عملة على النماذج
+for file_path in glob.glob(f"{DATA_DIR}/*.csv"):
+    pair_name = os.path.basename(file_path).replace(".csv", "")
+    print(f"\n--- Training models for {pair_name} ---")
     
     df = pd.read_csv(file_path)
-    df["close"] = df["close"].astype(float)
-    
-    # إنشاء إشارات (صعود / هبوط)
-    df["target"] = np.where(df["close"].shift(-1) > df["close"], 1, 0)
-    
-    return df.dropna()
-
-def train_model(symbol="BTCUSDT"):
-    """تدريب نموذج التنبؤ"""
-    df = load_data(symbol)
-    
-    X = df[["open", "high", "low", "close", "volume"]]
-    y = df["target"]
+    X, y = prepare_data(df)
     
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, shuffle=False
     )
     
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
-    
-    preds = model.predict(X_test)
-    acc = accuracy_score(y_test, preds)
-    print(f"دقة النموذج: {acc * 100:.2f}%")
-    
-    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
-    joblib.dump(model, MODEL_PATH)
-    print(f"تم حفظ النموذج في {MODEL_PATH}")
+    for name, model in models.items():
+        print(f"Training {name}...")
+        model.fit(X_train, y_train)
+        preds = model.predict(X_test)
+        acc = accuracy_score(y_test, preds)
+        print(f"{name} Accuracy: {acc:.4f}")
+        
+        # حفظ النموذج
+        model_filename = f"{MODELS_DIR}/{pair_name}_{name}.pkl"
+        joblib.dump(model, model_filename)
 
-if __name__ == "__main__":
-    train_model()
+print("\n✅ All models trained and saved successfully.")
