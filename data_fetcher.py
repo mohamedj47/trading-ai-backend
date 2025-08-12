@@ -6,15 +6,12 @@ from config import DATA_DIR, START_DATE
 
 # الأزواج الأساسية
 BASE_PAIRS = [
- PAIRS = [
     "MCO-ETH", "OAX-ETH", "ETH-BTC", "BNT-ETH", "SNT-ETH",
     "NEO-BTC", "USDCAD=X", "LTC-BTC", "BCC-BTC", "USDJPY=X",
     "GAS-BTC", "BNB-ETH", "WTC-BTC", "GC=F",  
     "GBPUSD=X", "BTC-USD", "NZDUSD=X", "QTUM-ETH", "HSR-BTC",
     "DNT-ETH", "ICN-ETH", "AUDUSD=X", "EURUSD=X", "EOS-ETH",
     "ETH-USD", "MCO-BTC", "BNB-BTC"
-]
-
 ]
 
 # إنشاء مجلد البيانات لو مش موجود
@@ -28,7 +25,7 @@ def get_top_binance_pairs(limit=20):
     # ترتيب حسب الحجم
     pairs_sorted = sorted(
         markets.values(),
-        key=lambda x: x['info'].get('quoteVolume', 0),
+        key=lambda x: float(x['info'].get('quoteVolume', 0)),
         reverse=True
     )
     
