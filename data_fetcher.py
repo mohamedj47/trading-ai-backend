@@ -6,15 +6,15 @@ from config import DATA_DIR, START_DATE
 
 # الأزواج الأساسية
 BASE_PAIRS = [
-    "BTC-USD",
-    "ETH-USD",
-    "EURUSD=X",
-    "GBPUSD=X",
-    "USDJPY=X",
-    "XAUUSD=X",
-    "AUDUSD=X",
-    "USDCAD=X",
-    "NZDUSD=X"
+ PAIRS = [
+    "MCO-ETH", "OAX-ETH", "ETH-BTC", "BNT-ETH", "SNT-ETH",
+    "NEO-BTC", "USDCAD=X", "LTC-BTC", "BCC-BTC", "USDJPY=X",
+    "GAS-BTC", "BNB-ETH", "WTC-BTC", "GC=F",  
+    "GBPUSD=X", "BTC-USD", "NZDUSD=X", "QTUM-ETH", "HSR-BTC",
+    "DNT-ETH", "ICN-ETH", "AUDUSD=X", "EURUSD=X", "EOS-ETH",
+    "ETH-USD", "MCO-BTC", "BNB-BTC"
+]
+
 ]
 
 # إنشاء مجلد البيانات لو مش موجود
