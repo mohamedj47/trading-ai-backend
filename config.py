@@ -8,9 +8,13 @@ BINANCE_API_SECRET = os.getenv("BINANCE_API_SECRET", "")
 DATA_DIR = "data"
 MODELS_DIR = "models"
 
+# ملف بيانات الاختبار
+TEST_DATA = os.path.join(DATA_DIR, "test_data.csv")  # << هنا الإضافة المهمة
+
 # نطاق البيانات التاريخية
 START_DATE = "2015-01-01"
 
 # إعدادات التدريب
 TEST_SIZE = 0.2
 RANDOM_STATE = 42
+
