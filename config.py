@@ -1,4 +1,8 @@
 import os
+
+DATA_DIR = "data"
+os.makedirs(DATA_DIR, exist_ok=True)
+import os
 # إعدادات API Keys (من environment variables)
 BINANCE_API_KEY = os.getenv("BINANCE_API_KEY", "")
 BINANCE_API_SECRET = os.getenv("BINANCE_API_SECRET", "")
